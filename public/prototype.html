@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>きょうナニする？ プロトタイプ</title>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF7EE; --card:#fff; --ink:#3A3340; --sub:#8A8090; --line:#F0E4D8;
+  --main:#FF7A59; --main2:#FFB347; --mint:#4CC9A6; --sky:#5AA9F7; --berry:#E85D9A; --lav:#9B87F5;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:"M PLUS Rounded 1c",system-ui,sans-serif;background:#EDE6DF;color:var(--ink);min-height:100vh;display:flex;justify-content:center}
+.phone{width:100%;max-width:420px;min-height:100vh;background:var(--bg);position:relative;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+header{padding:18px 20px 8px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-weight:800;font-size:20px;letter-spacing:.02em}
+.logo span{color:var(--main)}
+.date{font-size:12px;color:var(--sub);background:#fff;border-radius:99px;padding:4px 10px;border:1px solid var(--line)}
+main{flex:1;overflow-y:auto;padding:4px 18px 110px}
+.screen{display:none;animation:fade .3s}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{font-size:18px;font-weight:800;margin:10px 2px 4px}
+.lead{font-size:13px;color:var(--sub);margin:0 2px 14px}
+.card{background:var(--card);border-radius:20px;padding:16px;box-shadow:0 2px 0 var(--line);border:1px solid var(--line);margin-bottom:14px}
+.label{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* gacha machine */
+.machine{position:relative;width:230px;margin:6px auto 0}
+.globe{width:230px;height:200px;border-radius:115px 115px 30px 30px;background:radial-gradient(circle at 30% 25%,#ffffffcc,#ffffff55 40%,#ffe9dc 100%);border:5px solid #fff;box-shadow:inset 0 -10px 0 #ffd9c7,0 4px 0 var(--line);position:relative;overflow:hidden}
+.ball{position:absolute;width:44px;height:44px;border-radius:50%;border:3px solid #fff;box-shadow:inset -4px -4px 0 #0000001a}
+.ball::after{content:"";position:absolute;left:0;right:0;top:50%;height:3px;background:#fff;transform:translateY(-50%)}
+.globe.shake .ball{animation:jiggle .25s infinite alternate}
+@keyframes jiggle{from{transform:translate(-4px,2px) rotate(-10deg)}to{transform:translate(4px,-3px) rotate(12deg)}}
+.base{width:230px;height:110px;margin-top:-6px;background:var(--main);border-radius:18px 18px 26px 26px;position:relative;box-shadow:inset 0 -8px 0 #e8603f}
+.handle{position:absolute;left:28px;top:24px;width:60px;height:60px;border-radius:50%;background:#fff;border:none;cursor:pointer;box-shadow:0 4px 0 #e8603f;transition:transform .6s}
+.handle::before{content:"";position:absolute;left:50%;top:8px;bottom:8px;width:12px;margin-left:-6px;background:var(--main2);border-radius:6px}
+.handle.spin{transform:rotate(360deg)}
+.handle:disabled{opacity:.5;cursor:not-allowed}
+.slot{position:absolute;right:28px;top:30px;width:66px;height:50px;border-radius:12px;background:#c94a2e;box-shadow:inset 0 6px 0 #0003}
+.turn{position:absolute;left:22px;bottom:8px;font-size:11px;color:#fff;font-weight:800;width:72px;text-align:center}
+.drop{position:absolute;right:39px;top:32px;width:44px;height:44px;border-radius:50%;opacity:0;border:3px solid #fff}
+.drop.show{animation:dropin .6s forwards}
+@keyframes dropin{0%{opacity:1;transform:translateY(-40px)}70%{transform:translateY(4px)}100%{opacity:1;transform:none}}
+
+.remain{display:flex;align-items:center;justify-content:center;gap:6px;margin:14px 0 4px;font-size:13px;font-weight:700}
+.dots{display:flex;gap:5px}
+.dots i{width:12px;height:12px;border-radius:50%;background:var(--main)}
+.dots i.used{background:var(--line)}
+.note{font-size:11.5px;color:var(--sub);text-align:center}
+
+/* buttons */
+.btn{display:block;width:100%;border:none;border-radius:16px;padding:14px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 0 #0000001f;transition:transform .08s}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #0000001f}
+.btn.primary{background:var(--main);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);box-shadow:0 3px 0 var(--line)}
+.btn.mint{background:var(--mint);color:#fff}
+.row{display:flex;gap:10px}
+.row .btn{flex:1}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:#3a334099;display:none;align-items:center;justify-content:center;z-index:50;padding:24px}
+.overlay.show{display:flex}
+.result{background:#fff;border-radius:26px;width:100%;max-width:360px;padding:26px 22px 20px;text-align:center;animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.result .icon{font-size:56px;line-height:1;margin-bottom:6px}
+.result .tag{display:inline-block;font-size:11px;font-weight:800;color:#fff;border-radius:99px;padding:3px 10px;margin-bottom:10px}
+.result .title{font-size:21px;font-weight:800;margin-bottom:4px}
+.result .ask{font-size:14px;color:var(--sub);margin-bottom:6px}
+.result .meta{font-size:12px;color:var(--sub);margin-bottom:18px}
+.result .btn{margin-top:10px}
+
+/* suggest chat */
+.chat{display:flex;flex-direction:column;gap:12px;min-height:200px}
+.msg{display:flex;gap:10px;align-items:flex-end;animation:fade .3s}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--main2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.bubble{background:#fff;border:1px solid var(--line);border-radius:18px 18px 18px 4px;padding:12px 14px;font-size:14px;line-height:1.6;max-width:85%}
+.bubble b{color:var(--main)}
+.msg.me{justify-content:flex-end}
+.msg.me .bubble{background:var(--ink);color:#fff;border-color:var(--ink);border-radius:18px 18px 4px 18px}
+.typing span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--sub);margin:0 2px;animation:blink 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes blink{50%{opacity:.2}}
+.actions{display:flex;gap:8px;margin-top:14px}
+.actions .btn{font-size:14px;padding:12px}
+
+/* review */
+.q{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px dashed var(--line)}
+.q:last-child{border-bottom:none}
+.qtext{font-size:14.5px;font-weight:700;display:flex;gap:8px}
+.qnum{background:var(--lav);color:#fff;border-radius:8px;font-size:12px;padding:1px 7px;height:fit-content}
+.yn{display:flex;gap:8px}
+.yn button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;color:var(--ink)}
+.yn button.yes.on{background:var(--mint);border-color:var(--mint);color:#fff}
+.yn button.no.on{background:var(--berry);border-color:var(--berry);color:#fff}
+.score{text-align:center;padding:6px 0}
+.score .big{font-size:40px;font-weight:800;color:var(--main)}
+.score p{font-size:14px;line-height:1.7}
+
+/* history */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.day{font-size:11px;color:var(--sub)}
+.day .cell{margin-top:4px;aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff}
+.lv0{background:#EFE7E0;color:var(--sub)!important}.lv1{background:#FFD3B8}.lv2{background:#FFA57F}.lv3{background:var(--main)}
+.logitem{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.logitem:last-child{border-bottom:none}
+.logitem .ic{width:40px;height:40px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.logitem .t{font-weight:700;font-size:14px}
+.logitem .s{font-size:11.5px;color:var(--sub)}
+.logitem .badge{margin-left:auto;white-space:nowrap;flex-shrink:0;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px}
+.b-done{background:#DDF6EE;color:#1f9b78}.b-skip{background:#F3EDF0;color:var(--sub)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg);border-radius:14px;padding:10px;text-align:center}
+.stat .n{font-size:20px;font-weight:800}
+.stat .l{font-size:11px;color:var(--sub)}
+
+/* tab bar */
+nav{position:fixed;bottom:0;width:100%;max-width:420px;background:#fff;border-top:1px solid var(--line);display:flex;padding:8px 6px calc(10px + env(safe-area-inset-bottom));z-index:40}
+nav button{flex:1;background:none;border:none;font:inherit;font-size:10.5px;font-weight:700;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0}
+nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--main)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:10px 16px;border-radius:99px;opacity:0;transition:.3s;z-index:60;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.ver{font:inherit;font-size:11px;font-weight:800;color:var(--main);background:#fff;border:1.5px solid var(--main);border-radius:99px;padding:3px 9px;cursor:pointer}
+.clog{text-align:left;max-height:60vh;overflow-y:auto;margin:6px 0 4px}
+.clog .v{padding:12px 0;border-bottom:1px dashed var(--line)}
+.clog .v:last-child{border-bottom:none}
+.clog .vh{display:flex;gap:8px;align-items:baseline;margin-bottom:6px}
+.clog .vn{font-weight:800;color:var(--main)}
+.clog .vd{font-size:11.5px;color:var(--sub)}
+.clog ul{padding-left:18px;font-size:13px;line-height:1.7}
+.proto{font-size:10.5px;color:var(--sub);text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <header>
+    <div class="logo">きょう<span>ナニ</span>する？</div>
+    <div style="display:flex;gap:6px;align-items:center"><button class="ver" id="ver"></button><div class="date" id="today"></div></div>
+  </header>
+
+  <main>
+    <!-- ガチャ -->
+    <section class="screen active" id="s-gacha">
+      <h2>ヒマつぶしガチャ</h2>
+      <p class="lead">迷ったらまわすだけ。今日やることをガチャが決めます。</p>
+
+      <div class="card">
+        <div class="label">ジャンルをえらぶ</div>
+        <div class="chips" data-group="gacha"></div>
+      </div>
+
+      <div class="machine">
+        <div class="globe" id="globe"></div>
+        <div class="base">
+          <button class="handle" id="handle" aria-label="ガチャをまわす"></button>
+          <div class="turn">まわす</div>
+          <div class="slot"></div>
+          <div class="drop" id="drop"></div>
+        </div>
+      </div>
+
+      <div class="remain">今日の残り <div class="dots" id="dots"></div> <span id="remainText"></span></div>
+      <p class="note">ガチャは1日3回まで。引きすぎて迷わないための制限です。</p>
+    </section>
+
+    <!-- 提案 -->
+    <section class="screen" id="s-suggest">
+      <h2>おまかせ提案</h2>
+      <p class="lead">使える時間を選ぶと、ちょうどいいことを提案します。</p>
+      <div class="card">
+        <div class="label">使える時間は？</div>
+        <div class="chips" data-group="time"></div>
+        <div class="label" style="margin-top:14px">ジャンル</div>
+        <div class="chips" data-group="suggest"></div>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="actions" id="chatActions"></div>
+    </section>
+
+    <!-- 振り返り -->
+    <section class="screen" id="s-review">
+      <h2>1日のふりかえり</h2>
+      <p class="lead">寝る前に3つだけ。「はい」か「いいえ」で答えてね。</p>
+      <div class="card" id="qcard"></div>
+      <button class="btn primary" id="submitReview" disabled style="opacity:.5">ふりかえりを記録する</button>
+      <div class="card score" id="scoreCard" style="display:none;margin-top:14px"></div>
+    </section>
+
+    <!-- 記録 -->
+    <section class="screen" id="s-history">
+      <h2>これまでの記録</h2>
+      <p class="lead">ふりかえりの「はい」の数で色が濃くなります。</p>
+      <div class="card">
+        <div class="label">この7日間</div>
+        <div class="week" id="week"></div>
+      </div>
+      <div class="card">
+        <div class="stats" id="stats"></div>
+      </div>
+      <div class="card">
+        <div class="label">やったこと</div>
+        <div id="logs"></div>
+      </div>
+      <p class="proto">※プロトタイプのため、記録は画面を閉じると消えます（過去分はサンプルです）</p>
+    </section>
+  </main>
+
+  <nav>
+    <button class="on" data-tab="gacha"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="7"/><path d="M5 10h14M8 21h8M12 17v4"/></svg>ガチャ</button>
+    <button data-tab="suggest"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>提案</button>
+    <button data-tab="review"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>ふりかえり</button>
+    <button data-tab="history"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>記録</button>
+  </nav>
+
+  <div class="overlay" id="overlay"><div class="result" id="result"></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ===== 更新履歴（改良のたびに先頭へ追加） =====
+const CHANGELOG = [
+  {v:"1.1", date:"2026/11/20", items:[
+    "ヘッダーにバージョン表示を追加",
+    "バージョンをタップすると更新履歴が見られるように",
+  ]},
+  {v:"1.0", date:"2026/11/13", items:[
+    "初版リリース（見た目確認用プロトタイプ）",
+    "ガチャ機能：ジャンル選択つき・1日3回まで",
+    "おまかせ提案：使える時間とジャンルで絞り込み、チャット形式で提案",
+    "1日のふりかえり：はい／いいえの3問とスコア表示",
+    "記録画面：7日間のスコア・やったこと一覧（過去分はサンプル）",
+  ]},
+];
+const GENRES = {
+  all:{name:"すべて",color:"#3A3340"},
+  indoor:{name:"インドア",color:"#5AA9F7"},
+  outdoor:{name:"アウトドア",color:"#4CC9A6"},
+  study:{name:"勉強・成長",color:"#9B87F5"},
+  relax:{name:"リラックス",color:"#E85D9A"},
+  move:{name:"体を動かす",color:"#FFB347"},
+};
+const ACTS = [
+  ["indoor","📚","気になってた本を30ページ読む",30],["indoor","🎬","前から観たかった映画を1本観る",120],["indoor","🍳","冷蔵庫にあるもので1品つくる",40],
+  ["indoor","🧹","部屋の机まわりだけ片付ける",20],["indoor","🎨","スマホで写真を撮って色を加工してみる",20],["indoor","🧩","パズルゲームを1面クリアする",15],
+  ["indoor","✍️","好きなものを10個ノートに書き出す",15],["indoor","🎧","知らないアーティストのアルバムを1枚聴く",45],
+  ["outdoor","🚶","近所を知らない道で15分散歩する",15],["outdoor","☕","行ったことのないカフェに入ってみる",60],["outdoor","🌳","公園のベンチでぼーっとする",20],
+  ["outdoor","📷","外で「青いもの」を5つ撮影する",30],["outdoor","🏪","コンビニの新商品を1つ買ってみる",15],["outdoor","📖","図書館で表紙だけで本を選ぶ",60],
+  ["outdoor","🚲","自転車でとなり町まで行ってみる",120],
+  ["study","🔤","英単語を10個だけ覚える",15],["study","💻","授業の復習ノートを1ページまとめる",30],["study","🎓","資格の過去問を5問解く",20],
+  ["study","📝","明日やることを3つ書き出す",10],["study","🧠","気になる言葉を3つ調べてみる",15],["study","🗂️","PCのデスクトップを整理する",20],
+  ["relax","🛁","いつもより長めにお風呂に入る",40],["relax","😴","アラームをかけて20分昼寝する",20],["relax","🍵","温かい飲み物をゆっくり飲む",10],
+  ["relax","📵","30分スマホを置いて過ごす",30],["relax","🕯️","目を閉じて深呼吸を5回する",5],["relax","🎶","好きな曲だけでプレイリストを作る",30],
+  ["move","🤸","ストレッチを10分する",10],["move","🏃","軽くジョギングを20分する",20],["move","💪","スクワットを20回やってみる",5],
+  ["move","🕺","好きな曲1曲ぶん踊る",5],["move","🧘","YouTubeでヨガ動画を1本やる",20],["move","🏀","友だちを誘って体を動かす",90],
+].map(([g,icon,title,min])=>({g,icon,title,min}));
+
+const state = {gGenre:"all", sGenre:"all", time:30, remain:3, answers:[null,null,null], todayLog:[], reviewed:null, current:null};
+const $ = s=>document.querySelector(s);
+const pick = a=>a[Math.floor(Math.random()*a.length)];
+const minText = m=> m>=60 ? `約${m/60}時間` : `約${m}分`;
+
+// date
+const d=new Date(); const W="日月火水木金土";
+$("#today").textContent=`${d.getMonth()+1}/${d.getDate()}（${W[d.getDay()]}）`;
+
+// chips
+function renderChips(group,items,key){
+  const el=document.querySelector(`.chips[data-group=${group}]`);
+  el.innerHTML="";
+  items.forEach(([v,label])=>{
+    const b=document.createElement("button");
+    b.className="chip"+(state[key]===v?" on":""); b.textContent=label;
+    b.onclick=()=>{state[key]=v; renderChips(group,items,key); if(group==="gacha") fillGlobe();};
+    el.appendChild(b);
+  });
+}
+const genreItems=Object.entries(GENRES).map(([k,v])=>[k,v.name]);
+renderChips("gacha",genreItems,"gGenre");
+renderChips("suggest",genreItems,"sGenre");
+renderChips("time",[[15,"15分"],[30,"30分"],[60,"1時間"],[180,"半日"]],"time");
+
+// globe balls
+function fillGlobe(){
+  const cols = state.gGenre==="all" ? Object.values(GENRES).slice(1).map(g=>g.color) : [GENRES[state.gGenre].color];
+  const pos=[[20,120],[62,138],[106,128],[150,140],[170,98],[40,78],[90,86],[130,64],[70,40],[118,22],[16,34],[160,40]];
+  $("#globe").innerHTML=pos.map(([x,y],i)=>`<div class="ball" style="left:${x}px;top:${y}px;background:${cols[i%cols.length]};animation-delay:${i*.03}s"></div>`).join("");
+}
+fillGlobe();
+
+function renderRemain(){
+  $("#dots").innerHTML=[0,1,2].map(i=>`<i class="${i<3-state.remain?'used':''}"></i>`).join("");
+  $("#remainText").textContent=`${state.remain}回`;
+  $("#handle").disabled = state.remain<=0;
+}
+renderRemain();
+
+// gacha
+$("#handle").onclick=()=>{
+  if(state.remain<=0) return;
+  state.remain--; renderRemain();
+  const pool = ACTS.filter(a=>state.gGenre==="all"||a.g===state.gGenre);
+  const act = pick(pool);
+  state.current=act;
+  const h=$("#handle"), g=$("#globe"), dr=$("#drop");
+  h.classList.remove("spin"); void h.offsetWidth; h.classList.add("spin");
+  g.classList.add("shake");
+  dr.classList.remove("show"); dr.style.background=GENRES[act.g].color;
+  setTimeout(()=>{g.classList.remove("shake"); dr.classList.add("show");},800);
+  setTimeout(()=>showResult(act),1500);
+};
+function showResult(act){
+  const gen=GENRES[act.g];
+  $("#result").innerHTML=`
+    <div class="icon">${act.icon}</div>
+    <span class="tag" style="background:${gen.color}">${gen.name}</span>
+    <div class="title">${act.title}</div>
+    <div class="ask">…するのはいかがでしょうか？</div>
+    <div class="meta">目安 ${minText(act.min)}</div>
+    <button class="btn primary" id="doIt">やってみる！</button>
+    ${state.remain>0
+      ? `<button class="btn ghost" id="again">もう一回まわす（残り${state.remain}回）</button>`
+      : `<p class="note" style="margin-top:12px">今日のガチャはおしまい。<br>まずはこれをやってみよう！</p>`}
+    <button class="btn ghost" id="close" style="box-shadow:none;border:none;color:var(--sub);padding:8px">とじる</button>`;
+  $("#overlay").classList.add("show");
+  $("#doIt").onclick=()=>{addLog(act,"ガチャ"); closeModal(); toast("やることリストに追加しました");};
+  $("#close").onclick=closeModal;
+  const ag=$("#again"); if(ag) ag.onclick=()=>{closeModal(); setTimeout(()=>$("#handle").click(),250);};
+}
+function closeModal(){ $("#overlay").classList.remove("show"); $("#drop").classList.remove("show"); }
+
+// suggest chat
+const PHRASES=[
+  t=>`それなら<b>「${t}」</b>するのはいかがでしょうか？`,
+  t=>`<b>「${t}」</b>なんてどうでしょう？気分が変わるかも。`,
+  t=>`ちょっとした時間に<b>「${t}」</b>はいかがですか？`,
+];
+let shown=new Set();
+function suggest(first){
+  const chat=$("#chat");
+  if(!first){ chat.insertAdjacentHTML("beforeend",`<div class="msg me"><div class="bubble">ほかの案がいいな</div></div>`); }
+  const typing=document.createElement("div");
+  typing.className="msg"; typing.innerHTML=`<div class="avatar">🐣</div><div class="bubble typing"><span></span><span></span><span></span></div>`;
+  chat.appendChild(typing); $("#chatActions").innerHTML="";
+  setTimeout(()=>{
+    let pool=ACTS.filter(a=>(state.sGenre==="all"||a.g===state.sGenre)&&a.min<=state.time&&!shown.has(a.title));
+    if(!pool.length){shown.clear(); pool=ACTS.filter(a=>(state.sGenre==="all"||a.g===state.sGenre)&&a.min<=state.time);}
+    if(!pool.length) pool=ACTS.filter(a=>state.sGenre==="all"||a.g===state.sGenre);
+    const a=pick(pool); shown.add(a.title); state.current=a;
+    typing.querySelector(".bubble").classList.remove("typing");
+    typing.querySelector(".bubble").innerHTML=`${a.icon} ${pick(PHRASES)(a.title)}<br><span style="font-size:12px;color:var(--sub)">${GENRES[a.g].name}・目安 ${minText(a.min)}</span>`;
+    $("#chatActions").innerHTML=`<button class="btn primary" id="ok">いいね、やる！</button><button class="btn ghost" id="next">ほかの案</button>`;
+    $("#ok").onclick=()=>{
+      chat.insertAdjacentHTML("beforeend",`<div class="msg me"><div class="bubble">いいね、やる！</div></div><div class="msg"><div class="avatar">🐣</div><div class="bubble">いってらっしゃい！終わったら「ふりかえり」で今日をまとめてね。</div></div>`);
+      addLog(a,"提案"); $("#chatActions").innerHTML=`<button class="btn ghost" id="restart">もう一度提案してもらう</button>`;
+      $("#restart").onclick=()=>suggest(true);
+    };
+    $("#next").onclick=()=>suggest(false);
+  },700);
+}
+function initChat(){
+  $("#chat").innerHTML=`<div class="msg"><div class="avatar">🐣</div><div class="bubble">ヒマしてる？<br>時間とジャンルを選んだら、ぼくが決めてあげるね。</div></div>`;
+  $("#chatActions").innerHTML=`<button class="btn primary" id="start">提案してもらう</button>`;
+  $("#start").onclick=()=>{ $("#chat").insertAdjacentHTML("beforeend",`<div class="msg me"><div class="bubble">${state.time>=60?(state.time===180?"半日":"1時間"):state.time+"分"}あいてる！</div></div>`); suggest(true); };
+}
+initChat();
+
+// review
+const QS=["今日やることを自分で決められましたか？","決めたことを実際にやりましたか？","今日の時間の使い方に満足していますか？"];
+function renderQs(){
+  $("#qcard").innerHTML=QS.map((q,i)=>`
+    <div class="q"><div class="qtext"><span class="qnum">Q${i+1}</span>${q}</div>
+    <div class="yn"><button class="yes ${state.answers[i]===true?'on':''}" data-i="${i}" data-v="1">はい</button>
+    <button class="no ${state.answers[i]===false?'on':''}" data-i="${i}" data-v="0">いいえ</button></div></div>`).join("");
+  $("#qcard").querySelectorAll("button").forEach(b=>b.onclick=()=>{state.answers[+b.dataset.i]=b.dataset.v==="1";renderQs();});
+  const ready=state.answers.every(a=>a!==null);
+  const s=$("#submitReview"); s.disabled=!ready; s.style.opacity=ready?1:.5;
+}
+renderQs();
+const COMMENTS=[
+  "今日はゆっくりな日だったね。明日はガチャを1回まわすところから始めてみよう。",
+  "1つでも「はい」があればOK！小さな一歩が積み重なります。",
+  "いい感じ！あと少しで満点の1日です。",
+  "完ぺき！自分で決めて、行動して、満足できた最高の1日でした。",
+];
+$("#submitReview").onclick=()=>{
+  const n=state.answers.filter(Boolean).length; state.reviewed=n;
+  $("#scoreCard").style.display="block";
+  $("#scoreCard").innerHTML=`<div class="label">今日のスコア</div><div class="big">${n} / 3</div><p>${COMMENTS[n]}</p>`;
+  renderHistory(); toast("ふりかえりを記録しました");
+  $("#scoreCard").scrollIntoView({behavior:"smooth",block:"center"});
+};
+
+// history (sample past data + today in memory)
+const SAMPLE=[2,0,3,1,2,3]; // 6 days ago .. yesterday
+const SAMPLE_LOG=[
+  {icon:"🚶",title:"近所を知らない道で15分散歩する",when:"昨日",src:"ガチャ",done:true},
+  {icon:"🔤",title:"英単語を10個だけ覚える",when:"昨日",src:"提案",done:true},
+  {icon:"🎬",title:"前から観たかった映画を1本観る",when:"2日前",src:"ガチャ",done:false},
+  {icon:"🤸",title:"ストレッチを10分する",when:"3日前",src:"提案",done:true},
+];
+function addLog(a,src){ state.todayLog.unshift({icon:a.icon,title:a.title,when:"今日",src,done:true}); renderHistory(); }
+function streak(){ const arr=[...SAMPLE]; if(state.reviewed!=null) arr.push(state.reviewed); let c=0; for(let i=arr.length-1;i>=0&&arr[i]>0;i--) c++; return c; }
+function renderHistory(){
+  let html="";
+  for(let i=6;i>=0;i--){
+    const dd=new Date(); dd.setDate(dd.getDate()-i);
+    const v = i===0 ? state.reviewed : SAMPLE[6-i];
+    const lv = v==null?0:v;
+    html+=`<div class="day">${i===0?"今日":W[dd.getDay()]}<div class="cell lv${lv}">${v==null?"−":v}</div></div>`;
+  }
+  $("#week").innerHTML=html;
+  const all=[...state.todayLog,...SAMPLE_LOG];
+  const days=SAMPLE.filter(v=>v>0).length+(state.reviewed?1:0);
+  $("#stats").innerHTML=`
+    <div class="stat"><div class="n">${all.filter(l=>l.done).length}</div><div class="l">やったこと</div></div>
+    <div class="stat"><div class="n">${days}日</div><div class="l">充実した日</div></div>
+    <div class="stat"><div class="n">${streak()}日</div><div class="l">連続記録</div></div>`;
+  $("#logs").innerHTML=all.map(l=>`<div class="logitem"><div class="ic">${l.icon}</div><div><div class="t">${l.title}</div><div class="s">${l.when}・${l.src}から</div></div><span class="badge ${l.done?'b-done':'b-skip'}">${l.done?'やった':'見送り'}</span></div>`).join("");
+}
+renderHistory();
+
+// changelog
+$("#ver").textContent="v"+CHANGELOG[0].v;
+$("#ver").onclick=()=>{
+  $("#result").innerHTML=`<div class="title" style="font-size:18px">更新履歴</div>
+    <div class="clog">${CHANGELOG.map(c=>`<div class="v"><div class="vh"><span class="vn">v${c.v}</span><span class="vd">${c.date}</span></div><ul>${c.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("")}</div>
+    <button class="btn ghost" id="close">とじる</button>`;
+  $("#overlay").classList.add("show"); $("#close").onclick=closeModal;
+};
+
+// tabs
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id==="s-"+b.dataset.tab));
+  document.querySelector("main").scrollTop=0; window.scrollTo(0,0);
+});
+$("#overlay").onclick=e=>{ if(e.target.id==="overlay") closeModal(); };
+
+let tt; function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),1800); }
+</script>
+</body>
+</html>
