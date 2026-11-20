@@ -1,20 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { QUESTIONS, REVIEW_COMMENTS } from "@/lib/data";
 
-export function ReviewScreen({ onSubmit }: { onSubmit: (score: number) => void }) {
-  const [answers, setAnswers] = useState<(boolean | null)[]>(QUESTIONS.map(() => null));
-  const [score, setScore] = useState<number | null>(null);
+type Props = {
+  answers: (boolean | null)[];
+  score: number | null;
+  onAnswer: (i: number, v: boolean) => void;
+  onSubmit: (score: number) => void;
+};
+
+export function ReviewScreen({ answers, score, onAnswer, onSubmit }: Props) {
   const scoreRef = useRef<HTMLDivElement>(null);
   const ready = answers.every((a) => a !== null);
 
-  const answer = (i: number, v: boolean) => setAnswers((prev) => prev.map((a, j) => (j === i ? v : a)));
-
   const submit = () => {
-    const n = answers.filter(Boolean).length;
-    setScore(n);
-    onSubmit(n);
+    onSubmit(answers.filter(Boolean).length);
     requestAnimationFrame(() => scoreRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
   };
 
@@ -30,10 +31,10 @@ export function ReviewScreen({ onSubmit }: { onSubmit: (score: number) => void }
               {q}
             </div>
             <div className="yn">
-              <button className={"yes" + (answers[i] === true ? " on" : "")} onClick={() => answer(i, true)}>
+              <button className={"yes" + (answers[i] === true ? " on" : "")} onClick={() => onAnswer(i, true)}>
                 はい
               </button>
-              <button className={"no" + (answers[i] === false ? " on" : "")} onClick={() => answer(i, false)}>
+              <button className={"no" + (answers[i] === false ? " on" : "")} onClick={() => onAnswer(i, false)}>
                 いいえ
               </button>
             </div>

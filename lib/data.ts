@@ -19,6 +19,15 @@ export type LogEntry = {
 // 更新履歴（改良のたびに先頭へ追加）
 export const CHANGELOG: { v: string; date: string; items: string[] }[] = [
   {
+    v: "1.3",
+    date: "2026/11/20",
+    items: [
+      "記録をブラウザ（localStorage）に保存。画面を閉じても消えないように",
+      "ガチャの残り回数・ふりかえりの回答も日ごとに保存",
+      "記録画面のサンプルデータをやめ、実際の記録を表示",
+    ],
+  },
+  {
     v: "1.2",
     date: "2026/11/20",
     items: ["Next.js のコンポーネント構成に作り直し（見た目・動きは v1.1 と同じ）"],
@@ -112,14 +121,6 @@ export const REVIEW_COMMENTS = [
   "完ぺき！自分で決めて、行動して、満足できた最高の1日でした。",
 ];
 
-// 記録画面のサンプル（6日前〜昨日）
-export const SAMPLE_SCORES = [2, 0, 3, 1, 2, 3];
-export const SAMPLE_LOG: LogEntry[] = [
-  { icon: "🚶", title: "近所を知らない道で15分散歩する", when: "昨日", src: "ガチャ", done: true },
-  { icon: "🔤", title: "英単語を10個だけ覚える", when: "昨日", src: "提案", done: true },
-  { icon: "🎬", title: "前から観たかった映画を1本観る", when: "2日前", src: "ガチャ", done: false },
-  { icon: "🤸", title: "ストレッチを10分する", when: "3日前", src: "提案", done: true },
-];
 
 export const GACHA_PER_DAY = 3;
 

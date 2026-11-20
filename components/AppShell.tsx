@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CHANGELOG, GACHA_PER_DAY, WEEKDAYS, type Activity, type LogEntry } from "@/lib/data";
+import { CHANGELOG, WEEKDAYS, type Activity, type LogEntry } from "@/lib/data";
+import { dateKey, emptyDay, updateDay, useRecords } from "@/lib/store";
 import { useToday } from "@/lib/useToday";
 import { GachaScreen } from "./GachaScreen";
 import { HistoryScreen } from "./HistoryScreen";
@@ -13,9 +14,10 @@ import { TabBar, type Tab } from "./TabBar";
 export function AppShell() {
   const today = useToday();
   const [tab, setTab] = useState<Tab>("gacha");
-  const [remain, setRemain] = useState(GACHA_PER_DAY);
-  const [todayLog, setTodayLog] = useState<LogEntry[]>([]);
-  const [reviewed, setReviewed] = useState<number | null>(null);
+  const records = useRecords();
+  const todayKey = today ? dateKey(today) : null;
+  const day = (todayKey && records?.days[todayKey]) || emptyDay();
+  const updateToday = (fn: Parameters<typeof updateDay>[1]) => todayKey && updateDay(todayKey, fn);
   const [showLog, setShowLog] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const [toastOn, setToastOn] = useState(false);
@@ -30,7 +32,7 @@ export function AppShell() {
   };
 
   const addLog = (a: Activity, src: LogEntry["src"]) =>
-    setTodayLog((prev) => [{ icon: a.icon, title: a.title, when: "今日", src, done: true }, ...prev]);
+    updateToday((d) => ({ ...d, log: [...d.log, { icon: a.icon, title: a.title, src, done: true, at: Date.now() }] }));
 
   const changeTab = (t: Tab) => {
     setTab(t);
@@ -60,8 +62,8 @@ export function AppShell() {
         {/* タブを切り替えても各画面の状態が残るよう、全画面を常にマウントしておく */}
         <section className={screen("gacha")}>
           <GachaScreen
-            remain={remain}
-            onSpin={() => setRemain((r) => r - 1)}
+            remain={records ? day.remain : 0}
+            onSpin={() => updateToday((d) => ({ ...d, remain: Math.max(0, d.remain - 1) }))}
             onDo={(a) => {
               addLog(a, "ガチャ");
               toast("やることリストに追加しました");
@@ -73,14 +75,17 @@ export function AppShell() {
         </section>
         <section className={screen("review")}>
           <ReviewScreen
+            answers={day.answers}
+            score={day.score}
+            onAnswer={(i, v) => updateToday((d) => ({ ...d, answers: d.answers.map((a, j) => (j === i ? v : a)) }))}
             onSubmit={(n) => {
-              setReviewed(n);
+              updateToday((d) => ({ ...d, score: n }));
               toast("ふりかえりを記録しました");
             }}
           />
         </section>
         <section className={screen("history")}>
-          <HistoryScreen todayLog={todayLog} reviewed={reviewed} />
+          <HistoryScreen records={records} today={today} />
         </section>
       </main>
 

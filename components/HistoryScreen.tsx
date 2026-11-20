@@ -1,22 +1,38 @@
 "use client";
 
-import { SAMPLE_LOG, SAMPLE_SCORES, WEEKDAYS, type LogEntry } from "@/lib/data";
-import { useToday } from "@/lib/useToday";
+import { WEEKDAYS } from "@/lib/data";
+import { dateKey, type Records } from "@/lib/store";
 
-type Props = { todayLog: LogEntry[]; reviewed: number | null };
+type Props = { records: Records | null; today: Date | null };
 
-function streak(reviewed: number | null) {
-  const arr = [...SAMPLE_SCORES];
-  if (reviewed != null) arr.push(reviewed);
-  let c = 0;
-  for (let i = arr.length - 1; i >= 0 && arr[i] > 0; i--) c++;
-  return c;
-}
+const daysAgo = (today: Date, n: number) => {
+  const d = new Date(today);
+  d.setDate(d.getDate() - n);
+  return d;
+};
 
-export function HistoryScreen({ todayLog, reviewed }: Props) {
-  const today = useToday();
-  const all = [...todayLog, ...SAMPLE_LOG];
-  const days = SAMPLE_SCORES.filter((v) => v > 0).length + (reviewed ? 1 : 0);
+const whenLabel = (n: number) => (n === 0 ? "今日" : n === 1 ? "昨日" : `${n}日前`);
+
+export function HistoryScreen({ records, today }: Props) {
+  const days = records?.days ?? {};
+  const scoreOn = (n: number) => (today ? (days[dateKey(daysAgo(today, n))]?.score ?? null) : null);
+
+  // やったこと：全日ぶんを新しい順に
+  const logs = today
+    ? Object.entries(days)
+        .flatMap(([key, d]) => {
+          const n = Math.round((new Date(dateKey(today)).getTime() - new Date(key).getTime()) / 86400000);
+          return d.log.map((l) => ({ ...l, when: whenLabel(n) }));
+        })
+        .sort((a, b) => b.at - a.at)
+    : [];
+
+  const doneCount = logs.filter((l) => l.done).length;
+  const goodDays = Object.values(days).filter((d) => (d.score ?? 0) > 0).length;
+
+  // 連続記録：今日（未記録なら昨日）からさかのぼって、スコア1以上が続いた日数
+  let streak = 0;
+  for (let n = scoreOn(0) == null ? 1 : 0; (scoreOn(n) ?? 0) > 0; n++) streak++;
 
   return (
     <>
@@ -25,17 +41,11 @@ export function HistoryScreen({ todayLog, reviewed }: Props) {
       <div className="card">
         <div className="label">この7日間</div>
         <div className="week">
-          {[6, 5, 4, 3, 2, 1, 0].map((i) => {
-            const v = i === 0 ? reviewed : SAMPLE_SCORES[6 - i];
-            let label = "";
-            if (i === 0) label = "今日";
-            else if (today) {
-              const dd = new Date(today);
-              dd.setDate(dd.getDate() - i);
-              label = WEEKDAYS[dd.getDay()];
-            }
+          {[6, 5, 4, 3, 2, 1, 0].map((n) => {
+            const v = scoreOn(n);
+            const label = n === 0 ? "今日" : today ? WEEKDAYS[daysAgo(today, n).getDay()] : "";
             return (
-              <div className="day" key={i}>
+              <div className="day" key={n}>
                 {label}
                 <div className={`cell lv${v ?? 0}`}>{v == null ? "−" : v}</div>
               </div>
@@ -46,23 +56,28 @@ export function HistoryScreen({ todayLog, reviewed }: Props) {
       <div className="card">
         <div className="stats">
           <div className="stat">
-            <div className="n">{all.filter((l) => l.done).length}</div>
+            <div className="n">{doneCount}</div>
             <div className="l">やったこと</div>
           </div>
           <div className="stat">
-            <div className="n">{days}日</div>
+            <div className="n">{goodDays}日</div>
             <div className="l">充実した日</div>
           </div>
           <div className="stat">
-            <div className="n">{streak(reviewed)}日</div>
+            <div className="n">{streak}日</div>
             <div className="l">連続記録</div>
           </div>
         </div>
       </div>
       <div className="card">
         <div className="label">やったこと</div>
-        {all.map((l, i) => (
-          <div className="logitem" key={i}>
+        {logs.length === 0 && (
+          <p className="note" style={{ padding: "12px 0" }}>
+            まだ記録がありません。ガチャか提案で「やってみる」を選ぶとここに残ります。
+          </p>
+        )}
+        {logs.map((l) => (
+          <div className="logitem" key={l.at + l.title}>
             <div className="ic">{l.icon}</div>
             <div>
               <div className="t">{l.title}</div>
@@ -74,7 +89,7 @@ export function HistoryScreen({ todayLog, reviewed }: Props) {
           </div>
         ))}
       </div>
-      <p className="proto">※プロトタイプのため、記録は画面を閉じると消えます（過去分はサンプルです）</p>
+      <p className="proto">※記録はこの端末のブラウザに保存されます</p>
     </>
   );
 }
